@@ -139,7 +139,7 @@ bool Update()
         food.y = Math::Random(1, HEIGHT - 1);
 
         lengthCount++;
-        tail[STARTLENGTH + lengthCount].isTail = true;
+        tail[STARTLENGTH - 2 + lengthCount].isTail = true;
     }
 
     return true;
