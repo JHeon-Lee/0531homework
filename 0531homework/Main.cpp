@@ -3,6 +3,7 @@
 #define WIDTH 30
 #define HEIGHT 20
 #define STARTLENGTH 3
+#define MAXLENGTH 100
 
 void gotoxy(int x, int y);
 void Start();
@@ -22,20 +23,28 @@ struct Food
 {
     int x;
     int y;
-    bool isFood;
 };
 
-struct Player
+struct PlayerHead
 {
     int x;
     int y;
     Direction pDirection;
 };
 
+struct PlayerTail
+{
+    int x;
+    int y;
+    bool isTail;
+};
+
 Food food;
-Player player;
+PlayerHead head;
+PlayerTail tail[MAXLENGTH];
 
 int Score = 0;
+int lengthCount = 0;
 
 Stopwatch currentTime;
 
@@ -81,17 +90,28 @@ void Start()
     system("cls");
 }
 
-void Reset()
+void Reset() // 초기화
 {
     currentTime.Start();
 
     food.x = Math::Random(1, WIDTH - 1);
     food.y = Math::Random(1, HEIGHT - 1);
-    food.isFood = true;
 
-    player.x = WIDTH / 2;
-    player.y = HEIGHT / 2;
-    player.pDirection = Direction::RIGHT;
+    head.x = WIDTH / 2;
+    head.y = HEIGHT / 2;
+    head.pDirection = Direction::RIGHT;
+
+    for (int i = 0; i < MAXLENGTH; i++)
+    {
+        if (i < STARTLENGTH - 1)
+        {
+            tail[i].x = WIDTH / 2 - i - 1;
+            tail[i].y = HEIGHT / 2;
+            tail[i].isTail = true;
+        }
+        else
+            tail[i].isTail = false;
+    }
 }
 
 bool Update()
@@ -106,12 +126,22 @@ bool Update()
         {
             key = _getch();
 
-            player.pDirection = static_cast<Direction>(key);
-
-            
-            // 플레이어 머리랑 먹이 부딪혔을때, 벽이랑 부딪혔을때
+            head.pDirection = static_cast<Direction>(key);
         }
     }
+
+    if (head.x > WIDTH - 1 || head.x < 1 || head.y > HEIGHT - 1 || head.y < 1) // 벽과 닿았을 경우
+        return false;
+
+    if (head.x == food.x && head.y == food.y) // 먹이와 닿았을 경우
+    {
+        food.x = Math::Random(1, WIDTH - 1);
+        food.y = Math::Random(1, HEIGHT - 1);
+
+        lengthCount++;
+        tail[STARTLENGTH + lengthCount].isTail = true;
+    }
+
     return true;
 }
 
@@ -119,28 +149,57 @@ void Render()
 {
     system("cls");
 
-    gotoxy(food.x, food.y);
-    std::cout << "＃";
+    // 지렁이가 움직이는 부분
+    int tempX(tail[0].x);
+    int tempY(tail[0].y);
+    tail[0].x = head.x;
+    tail[0].y = head.y;
 
-    // 플레이어 머리 ~ 꼬리 구현
-    switch (player.pDirection)
+    for (int i = 1; i < MAXLENGTH; i++)
+    {
+        if (tail[i].isTail == true)
+        {
+            int tempX2(tail[i].x);
+            int tempY2(tail[i].y);
+            tail[i].x = tempX;
+            tail[i].y = tempY;
+            tempX = tempX2;
+            tempY = tempY2;
+        }
+    }
+
+    // 머리 방향 설정
+    switch (head.pDirection)
     {
         case Direction::UP :
-            player.y--;
+            head.y--;
             break;
         case Direction::LEFT:
-            player.x--;
+            head.x--;
             break;
         case Direction::RIGHT:
-            player.x++;
+            head.x++;
             break;
         case Direction::DOWN:
-            player.y++;
+            head.y++;
             break;
     }
 
-    gotoxy(player.x, player.y);
+    // 출력부
+    gotoxy(food.x, food.y);
+    std::cout << "＃";
+
+    gotoxy(head.x, head.y);
     std::cout << "★";
+
+    for (int i = 0; i < MAXLENGTH; i++)
+    {
+        if (tail[i].isTail == true)
+        {
+            gotoxy(tail[i].x, tail[i].y);
+            std::cout << "☆";
+        }
+    }
 
     for (int i = 0; i < WIDTH + 1; i++)
     {
@@ -153,13 +212,20 @@ void Render()
             if(i==0 || i==WIDTH)
                 std::cout << "※";
         }
-        gotoxy(i, HEIGHT + 1);
+        gotoxy(i, HEIGHT);
         std::cout << "※";
     }
 
     std:: cout << std::endl;
     std::cout << "점수 : " << Score;
 
-    Sleep(500);
+    Sleep(300);
     Score += 100;
+
+    // 몸통과 닿았을 경우 종료
+    for (int i = 0; i < MAXLENGTH; i++)
+    {
+        if (head.x == tail[i].x && head.y == tail[i].y)
+            exit(0);
+    }
 }
