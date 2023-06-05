@@ -225,7 +225,7 @@ void Render()
     // 몸통과 닿았을 경우 종료
     for (int i = 0; i < MAXLENGTH; i++)
     {
-        if (head.x == tail[i].x && head.y == tail[i].y)
+        if (head.x == tail[i].x && head.y == tail[i].y && tail[i].isTail == true)
             exit(0);
     }
 }
